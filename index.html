@@ -55,6 +55,44 @@
         .btn-undo { background-color: #9e6a03; color: white; }
         .btn-clear { background-color: #30363d; color: white; }
         .btn-send { background-color: #8957e5; color: white; }
+        .btn-run { background-color: #238636; color: white; }
+        .btn-fix { background-color: #bf3989; color: white; }
+
+        .run-panel { margin-top: 12px; }
+        .run-title { color: #58a6ff; font-weight: bold; margin: 0 0 8px; }
+        #previewFrame {
+            display: none;
+            width: 100%;
+            height: 320px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background: #fff;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        #consoleOut {
+            background-color: #010409;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 0;
+            min-height: 80px;
+            max-height: 320px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            box-sizing: border-box;
+        }
+        #consoleOut:empty::before { content: attr(data-ph); color: #6e7681; }
+        .o-log   { color: #c9d1d9; }
+        .o-error { color: #ff7b72; }
+        .o-warn  { color: #d29922; }
+        .o-info  { color: #79c0ff; }
+        .o-ok    { color: #7ee787; }
 
         #customLangBox { display: none; margin-bottom: 12px; }
         #customLangBox input { width: 100%; box-sizing: border-box; }
@@ -259,6 +297,21 @@
     <textarea id="codeEditor" placeholder="# यहाँ अनलिमिटेड कोड जुड़ता जाएगा।&#10;# माइक दबाएं और बोलकर, या टाइप करके पूरा प्रोग्राम बनवाएं..."></textarea>
     <div class="counter" id="counter">लाइनें: 0 | अक्षर: 0</div>
 
+    <!-- कोड यहीं चलाकर देखें -->
+    <div class="controls" style="margin-top:12px;">
+        <button id="runBtn" class="btn-run" onclick="runCode()">▶️ चलाकर देखें (Run)</button>
+        <button id="fixBtn" class="btn-fix" onclick="fixWithAI()">🛠️ AI से गलती ठीक करवाएं</button>
+        <button id="gotoBtn" class="btn-undo" onclick="gotoErrorLine()">📍 गलती वाली लाइन पर जाएं</button>
+        <button id="bigBtn" class="btn-clear" onclick="togglePreviewSize()">⛶ प्रीव्यू बड़ा/छोटा</button>
+        <button id="clearOutBtn" class="btn-clear" onclick="clearOutput(false)">🧹 आउटपुट साफ़ करें</button>
+    </div>
+
+    <div class="run-panel" id="runPanel">
+        <div class="run-title">📺 लाइव प्रीव्यू / आउटपुट / गलतियाँ</div>
+        <iframe id="previewFrame" sandbox="allow-scripts allow-modals allow-forms allow-popups"></iframe>
+        <pre id="consoleOut" data-ph="यहाँ आपके कोड का आउटपुट और गलतियाँ दिखेंगी... (▶️ चलाकर देखें दबाएं)"></pre>
+    </div>
+
     <!-- निर्देश -->
     <div class="help-box">
         <strong>💡 अनलिमिटेड कोडिंग के नियम:</strong>
@@ -271,6 +324,7 @@
             <li><b>➕ नीचे जोड़ता जाए</b> मोड में आप एक, दो या तीन लाइन जो भी बोलें, AI सिर्फ़ वही नया हिस्सा नीचे जोड़ता जाता है। इसलिए कोड कितना भी लंबा हो जाए, चलता रहेगा। कोड बीच में कट जाए तो "आगे का कोड पूरा करो" बोलें।</li>
             <li><b>हिंदी + English साथ में:</b> कोड के keywords हमेशा English में ही रहेंगे (Python वगैरह हिंदी नहीं समझते)। हिंदी सिर्फ़ कमेंट्स और स्क्रीन पर दिखने वाले टेक्स्ट (print, बटन के नाम) में आएगी। किसी खास लाइन के लिए बोल भी सकते हैं, जैसे "यह print हिंदी में करो"।</li>
             <li>कोड इसी ब्राउज़र में अपने-आप सेव होता रहता है, पर बहुत लंबा हो जाए तो बीच-बीच में <b>📋 कॉपी</b> करके कहीं रख लें।</li>
+            <li><b>▶️ चलाकर देखें:</b> HTML/CSS, JavaScript और Python कोड यहीं चलाकर देख सकते हैं। गलती हो तो लाइन नंबर दिखेगा। <b>📍</b> दबाकर उसी लाइन पर पहुँचें और खुद ठीक करें, या <b>🛠️ AI से गलती ठीक करवाएं</b> दबाएं (टाइप वाले बॉक्स में कुछ लिखा हो तो AI उसे भी ध्यान में रखेगा)। Java, C++ जैसी भाषाएँ ब्राउज़र में नहीं चल सकतीं, उन्हें कॉपी करके अपने कंपाइलर में चलाएँ।</li>
             <li>कोड एडिटर में <b>Tab</b> दबाकर इंडेंटेशन दे सकते हैं, और खुद भी कोड बदल सकते हैं।</li>
             <li>काम पूरा होने पर <b>"📋 पूरा कोड कॉपी करें"</b> दबाकर Pydroid 3 / Acode / VS Code में पेस्ट करें।</li>
         </ul>
@@ -832,6 +886,380 @@ ${userPrompt}`;
         } finally {
             clearTimeout(timeoutId);
             isProcessing = false;
+            sendBtn.disabled = false;
+            resetMic();
+        }
+    }
+
+    // ============ ▶️ कोड चलाकर देखें (Run) + गलती पकड़ना + AI से सुधार ============
+    const previewFrame = document.getElementById('previewFrame');
+    const consoleOut   = document.getElementById('consoleOut');
+    const runBtn       = document.getElementById('runBtn');
+    const fixBtn       = document.getElementById('fixBtn');
+
+    let lastError = null;      // {message, line, full} - पहली गलती
+    let outBuffer = "";        // AI को भेजने के लिए आउटपुट का हिस्सा
+    let pyodideReady = null;   // Python इंजन (पहली बार चलाने पर डाउनलोड होता है)
+    let runToken = 0;
+    let previewBig = false;
+
+    // iframe के अंदर चलने वाला छोटा सहायक: console और गलतियाँ पेज तक भेजता है।
+    // यह जानबूझकर एक ही लाइन में है, ताकि आपके कोड के लाइन नंबर न खिसकें।
+    const RUN_HELPER = '<script>(function(){var P=function(t,x,l){try{parent.postMessage({__vc:true,type:t,text:x,line:l},"*")}catch(e){}};var S=function(a){return Array.prototype.map.call(a,function(v){if(typeof v==="object"&&v!==null){try{return JSON.stringify(v)}catch(e){return String(v)}}return String(v)}).join(" ")};["log","info","warn","error"].forEach(function(k){var o=console[k];console[k]=function(){P(k,S(arguments));try{o.apply(console,arguments)}catch(e){}}});window.addEventListener("error",function(e){P("fatal",(e.message||"Error"),e.lineno||0)});window.addEventListener("unhandledrejection",function(e){var r=e.reason;P("fatal","Unhandled Promise: "+(r&&r.message?r.message:String(r)),0)});})();<\/script>';
+
+    // Python में input() चले, इसके लिए ब्राउज़र का prompt इस्तेमाल होता है
+    const PY_PRELUDE =
+        "import builtins, js\n" +
+        "def _vc_input(prompt=''):\n" +
+        "    r = js.prompt(str(prompt))\n" +
+        "    r = '' if r is None else str(r)\n" +
+        "    print(str(prompt) + r)\n" +
+        "    return r\n" +
+        "builtins.input = _vc_input\n";
+
+    function out(type, text) {
+        const span = document.createElement('span');
+        span.className = 'o-' + type;
+        span.textContent = text + "\n";
+        consoleOut.appendChild(span);
+        consoleOut.scrollTop = consoleOut.scrollHeight;
+        if (outBuffer.length < 6000) outBuffer += text + "\n";
+    }
+
+    function clearOutput(silent) {
+        consoleOut.textContent = "";
+        outBuffer = "";
+        lastError = null;
+        if (!silent) {
+            runToken++;
+            previewFrame.srcdoc = "";
+            previewFrame.style.display = 'none';
+            statusEl.innerText = "🧹 आउटपुट साफ़ कर दिया गया।";
+        }
+    }
+
+    function togglePreviewSize() {
+        previewBig = !previewBig;
+        previewFrame.style.height = previewBig ? '80vh' : '320px';
+        document.getElementById('runPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // गलती दर्ज करें: पहली गलती याद रखी जाती है (लाइन नंबर के साथ)
+    function setError(message, line, full) {
+        out('error', "❌ गलती: " + message);
+        if (line) {
+            const lineText = (editor.value.split('\n')[line - 1] || "").trim();
+            out('error', "📍 लाइन " + line + ": " + lineText);
+        }
+        if (!lastError) {
+            lastError = { message: message, line: line || 0, full: full || message };
+            out('info', "👉 ऊपर 📍 दबाकर उस लाइन पर जाएं और खुद ठीक करें, या 🛠️ दबाकर AI से ठीक करवाएं।");
+            statusEl.innerText = "❌ कोड में गलती मिली" + (line ? " (लाइन " + line + ")" : "") + "। नीचे आउटपुट देखें।";
+        }
+    }
+
+    // iframe से आने वाले संदेश (console / गलतियाँ)
+    window.addEventListener('message', (e) => {
+        if (e.source !== previewFrame.contentWindow) return;
+        const d = e.data;
+        if (!d || d.__vc !== true) return;
+        if (d.type === 'fatal') {
+            const msg = String(d.text);
+            setError(msg, Number(d.line) || 0, msg);
+        } else {
+            out(['log', 'info', 'warn', 'error'].indexOf(d.type) !== -1 ? d.type : 'log', String(d.text));
+        }
+    });
+
+    // कौन-सा कोड किस तरह चलेगा
+    function detectRunType(code) {
+        const name = (progLangEl.value === '__other__' ? customLangEl.value : progLangEl.value).trim().toLowerCase();
+        const head = code.trim().slice(0, 200).toLowerCase();
+        if (/^<!doctype html|^<html|^<body|^<head/.test(head) || name.indexOf('html') !== -1) return 'html';
+        if (name === 'javascript' || name === 'js' || name.indexOf('node') === 0) return 'js';
+        if (name === 'python' || name === 'py' || name.indexOf('python') === 0) return 'py';
+        return '';
+    }
+
+    function buildRunDoc(code, type) {
+        if (type === 'js') {
+            const safe = code.replace(/<\/script/gi, '<\\/script');
+            return '<!DOCTYPE html><html><head><meta charset="UTF-8">' + RUN_HELPER + '</head><body><script>' + safe + '\n<\/script></body></html>';
+        }
+        let doc = code;
+        if (/<head[^>]*>/i.test(doc)) {
+            doc = doc.replace(/<head[^>]*>/i, m => m + RUN_HELPER);
+        } else if (/<html[^>]*>/i.test(doc)) {
+            doc = doc.replace(/<html[^>]*>/i, m => m + RUN_HELPER);
+        } else {
+            doc = '<!DOCTYPE html><html><head><meta charset="UTF-8">' + RUN_HELPER + '</head><body>' + doc + '</body></html>';
+        }
+        return doc;
+    }
+
+    async function runCode() {
+        const code = editor.value;
+        if (!code.trim()) {
+            statusEl.innerText = "⚠️ एडिटर खाली है। पहले कुछ कोड बनाइए, फिर चलाकर देखिए।";
+            return;
+        }
+        clearOutput(true);
+        document.getElementById('runPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        const type = detectRunType(code);
+        if (!type) {
+            previewFrame.style.display = 'none';
+            const nm = (progLangEl.value === '__other__' ? customLangEl.value : progLangEl.value).trim();
+            out('warn', "⚠️ " + nm + " कोड ब्राउज़र में नहीं चलाया जा सकता। यहाँ सिर्फ़ HTML/CSS, JavaScript और Python चलते हैं।\nइस कोड को 📋 कॉपी करके अपने कंपाइलर/ऐप में चलाएँ।");
+            statusEl.innerText = "⚠️ इस भाषा का कोड यहाँ नहीं चल सकता।";
+            return;
+        }
+
+        if (type === 'py') {
+            await runPython(code);
+            return;
+        }
+
+        // HTML / JavaScript: सुरक्षित (sandbox) iframe में चलाएँ
+        const token = ++runToken;
+        previewFrame.style.display = (type === 'html') ? 'block' : 'none';
+        out('info', type === 'html' ? "▶️ HTML प्रीव्यू ऊपर चल रहा है..." : "▶️ JavaScript चल रही है...");
+        statusEl.innerText = "▶️ कोड चल रहा है...";
+        previewFrame.srcdoc = buildRunDoc(code, type);
+        setTimeout(() => {
+            if (token === runToken && !lastError) {
+                out('ok', "✅ अब तक कोई गलती नहीं मिली। (बटन/क्लिक पर चलने वाला हिस्सा खुद आज़माएँ, कोई गलती आई तो यहीं दिखेगी।)");
+                statusEl.innerText = "✅ कोड चल गया, अब तक कोई गलती नहीं मिली।";
+            }
+        }, 1500);
+    }
+
+    // Python: ब्राउज़र के अंदर चलने वाला Pyodide इंजन (पहली बार ~10MB डाउनलोड होता है)
+    function loadPyodideEngine() {
+        if (pyodideReady) return pyodideReady;
+        const base = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/";
+        pyodideReady = new Promise((resolve, reject) => {
+            const sc = document.createElement('script');
+            sc.src = base + "pyodide.js";
+            sc.onload = async () => {
+                try {
+                    resolve(await loadPyodide({ indexURL: base }));
+                } catch (e) {
+                    pyodideReady = null;
+                    reject(e);
+                }
+            };
+            sc.onerror = () => {
+                pyodideReady = null;
+                reject(new Error("Python इंजन डाउनलोड नहीं हो पाया। इंटरनेट जाँचें और दोबारा कोशिश करें।"));
+            };
+            document.head.appendChild(sc);
+        });
+        return pyodideReady;
+    }
+
+    async function runPython(code) {
+        previewFrame.style.display = 'none';
+        runBtn.disabled = true;
+        try {
+            out('info', pyodideReady
+                ? "▶️ Python चल रहा है..."
+                : "⏳ Python इंजन पहली बार डाउनलोड हो रहा है (लगभग 10MB), कृपया रुकें...");
+            statusEl.innerText = "⏳ Python चल रहा है...";
+            const py = await loadPyodideEngine();
+            py.setStdout({ batched: (t) => out('log', t) });
+            py.setStderr({ batched: (t) => out('error', t) });
+            await py.runPythonAsync(PY_PRELUDE);
+            try {
+                await py.loadPackagesFromImports(code);
+            } catch (e) {
+                out('warn', "⚠️ कुछ लाइब्रेरी लोड नहीं हो पाईं: " + (e.message || e));
+            }
+            await py.runPythonAsync(code);
+            if (!lastError) {
+                out('ok', "✅ प्रोग्राम पूरा हुआ, कोई गलती नहीं मिली।");
+                statusEl.innerText = "✅ Python कोड चल गया, कोई गलती नहीं मिली।";
+            }
+        } catch (err) {
+            const text = String(err && err.message ? err.message : err);
+            const hits = Array.from(text.matchAll(/File "<exec>", line (\d+)/g));
+            const line = hits.length ? parseInt(hits[hits.length - 1][1], 10) : 0;
+            const shortMsg = text.trim().split('\n').filter(Boolean).pop() || text;
+            setError(shortMsg, line, text);
+            if (text.trim().split('\n').length > 1) out('error', text.trim());
+        } finally {
+            runBtn.disabled = false;
+        }
+    }
+
+    // गलती वाली लाइन पर जाएं और उसे चुन लें (ताकि आप खुद ठीक कर सकें)
+    function scrollEditorToText(textBefore) {
+        const cs = getComputedStyle(editor);
+        const m = document.createElement('textarea');
+        ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'tabSize',
+         'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+         'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth', 'boxSizing'
+        ].forEach(k => { m.style[k] = cs[k]; });
+        m.style.width = editor.offsetWidth + 'px';
+        m.style.height = '0px';
+        m.style.position = 'absolute';
+        m.style.left = '-9999px';
+        m.style.visibility = 'hidden';
+        m.style.overflow = 'hidden';
+        m.value = textBefore;
+        document.body.appendChild(m);
+        const y = m.scrollHeight;
+        document.body.removeChild(m);
+        editor.scrollTop = Math.max(0, y - editor.clientHeight / 3);
+    }
+
+    function gotoErrorLine() {
+        if (!lastError || !lastError.line) {
+            statusEl.innerText = "⚠️ अभी गलती की कोई लाइन नहीं मिली। पहले ▶️ चलाकर देखें।";
+            return;
+        }
+        const lines = editor.value.split('\n');
+        const ln = Math.min(Math.max(1, lastError.line), lines.length);
+        let start = 0;
+        for (let i = 0; i < ln - 1; i++) start += lines[i].length + 1;
+        const end = start + lines[ln - 1].length;
+        editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        editor.focus({ preventScroll: true });
+        editor.setSelectionRange(start, end);
+        scrollEditorToText(editor.value.slice(0, start));
+        statusEl.innerText = "📍 लाइन " + ln + " चुनी गई है। इसे ठीक करके फिर ▶️ चलाएँ।";
+    }
+
+    // Gemini को एक सवाल भेजें और साफ़ किया हुआ कोड वापस लें
+    function cleanAiText(t) {
+        t = t.replace(/^\s*\n/, '').replace(/\s+$/, '');
+        const fs = t.match(/^[ \t]*```[a-zA-Z0-9+\-_#.]*[ \t]*\r?\n/);
+        if (fs) t = t.slice(fs[0].length);
+        t = t.replace(/\r?\n?[ \t]*```[ \t]*$/, '');
+        return t.replace(/\s+$/, '');
+    }
+
+    async function askGemini(promptText, apiKey) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000);
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: promptText }] }],
+                    generationConfig: { temperature: 0.2, maxOutputTokens: 32768 }
+                }),
+                signal: controller.signal
+            });
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message || "API से त्रुटि मिली");
+            if (!data.candidates || !data.candidates[0]) throw new Error("AI ने कोई जवाब नहीं दिया (सुरक्षा फ़िल्टर या खाली रिस्पॉन्स)। दोबारा कोशिश करें।");
+            const cand = data.candidates[0];
+            if (!cand.content || !cand.content.parts || !cand.content.parts.length) throw new Error("AI रिस्पॉन्स अधूरा है। दोबारा कोशिश करें।");
+            const text = cand.content.parts
+                .filter(p => typeof p.text === "string" && !p.thought)
+                .map(p => p.text)
+                .join("");
+            return { text: cleanAiText(text), truncated: cand.finishReason === "MAX_TOKENS" };
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
+    function friendlyError(err) {
+        let msg = err.message || String(err);
+        if (err.name === "AbortError") msg = "AI ने बहुत देर लगा दी (timeout)। दोबारा कोशिश करें।";
+        else if (msg.includes("API key not valid") || msg.includes("API_KEY_INVALID")) msg = "API Key गलत है। सही Key डालें।";
+        else if (msg.toLowerCase().includes("quota") || msg.includes("429")) msg = "आज की फ्री लिमिट खत्म हो गई है। थोड़ी देर बाद या कल कोशिश करें।";
+        else if (msg.toLowerCase().includes("failed to fetch")) msg = "इंटरनेट कनेक्शन नहीं है।";
+        else if (msg.includes("not found") || msg.includes("404")) msg = "Model (" + MODEL + ") उपलब्ध नहीं है। API Key या model का नाम जाँचें।";
+        return msg;
+    }
+
+    // 🛠️ AI से गलती ठीक करवाएं: कोड + गलती का संदेश भेजकर पूरा सुधरा हुआ कोड लेता है
+    async function fixWithAI() {
+        if (isProcessing) return;
+
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+            alert("कृपया पहले अपनी Gemini API Key दर्ज करें!");
+            apiKeyInput.focus();
+            return;
+        }
+        const code = editor.value;
+        if (!code.trim()) {
+            statusEl.innerText = "⚠️ एडिटर खाली है।";
+            return;
+        }
+        if (!lastError) {
+            statusEl.innerText = "⚠️ पहले ▶️ चलाकर देखें। गलती दिखने पर ही यह बटन काम करेगा।";
+            return;
+        }
+        if (code.length > 300000) {
+            statusEl.innerText = "⚠️ कोड बहुत बड़ा है, AI से पूरा सुधरवाना सुरक्षित नहीं। 📍 दबाकर उस लाइन को खुद ठीक करें।";
+            return;
+        }
+        const lang = getProgLang();
+        if (!lang) return;
+
+        isProcessing = true;
+        fixBtn.disabled = true;
+        micBtn.disabled = true;
+        sendBtn.disabled = true;
+        statusEl.innerText = "🛠️ AI गलती ढूँढकर ठीक कर रहा है...";
+
+        const lineText = lastError.line ? (code.split('\n')[lastError.line - 1] || "").trim() : "";
+        const note = typedEl.value.trim();
+
+        const promptText = `You are an expert ${lang} debugger.
+The code below was run and produced the error shown. Fix what is needed to remove this error (and any other obvious bug that would crash it right away). Keep everything else - structure, behavior, comments and the language of visible text - exactly the same.
+
+Rules:
+1. Output the COMPLETE corrected code (the whole file), not a fragment or a diff.
+2. Programming syntax stays in English.
+3. Output ONLY raw code. No markdown fences, no explanations.
+
+=== ERROR ===
+${lastError.message}
+${lastError.line ? "(line " + lastError.line + ": " + lineText + ")" : ""}
+${(lastError.full || "").slice(0, 3000)}
+
+=== PROGRAM OUTPUT BEFORE/DURING THE ERROR ===
+${outBuffer.slice(0, 3000)}
+
+=== USER NOTE (optional) ===
+${note || "(none)"}
+
+=== CODE ===
+${code}`;
+
+        try {
+            const res = await askGemini(promptText, apiKey);
+            if (!res.text) throw new Error("AI ने खाली कोड लौटाया। दोबारा कोशिश करें।");
+            if (res.truncated) throw new Error("सुधरा हुआ कोड बहुत लंबा होकर कट गया। आपका कोड सुरक्षित है। 📍 दबाकर गलती वाली लाइन खुद ठीक करें।");
+
+            if (code.trim().length > 300 && res.text.length < code.trim().length * 0.6) {
+                const ok = confirm("⚠️ सुधरा हुआ कोड पुराने से काफ़ी छोटा है (AI ने शायद कुछ हटा दिया)।\n\nफिर भी बदलना चाहते हैं?");
+                if (!ok) {
+                    statusEl.innerText = "↩️ बदलाव रद्द किया गया। आपका कोड वैसा ही है।";
+                    return;
+                }
+            }
+
+            previousCode = code;   // Undo के लिए
+            editor.value = res.text;
+            codeChanged();
+            if (note) typedEl.value = "";
+            lastError = null;
+            out('ok', "🛠️ AI ने कोड सुधार दिया। अब ▶️ दोबारा चलाकर जाँचें।");
+            statusEl.innerText = "✅ AI ने गलती ठीक कर दी। अब ▶️ दोबारा चलाकर देखें। (पसंद न आए तो ↩️ से वापस जाएँ)";
+        } catch (err) {
+            console.error(err);
+            statusEl.innerText = "❌ त्रुटि: " + friendlyError(err);
+        } finally {
+            isProcessing = false;
+            fixBtn.disabled = false;
             sendBtn.disabled = false;
             resetMic();
         }

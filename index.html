@@ -515,6 +515,30 @@
         }
     }
 
+    // बोले हुए नतीजों को मिलाएँ: बढ़ते हुए (cumulative) या सुधरे हुए रूप एक ही टुकड़े में बदलते हैं, दोहराव नहीं होता
+    function mergeResults(results) {
+        const segs = [];
+        for (let i = 0; i < results.length; i++) {
+            const t = (results[i][0].transcript || "").trim();
+            if (!t) continue;
+            if (segs.length) {
+                const last = segs[segs.length - 1];
+                if (t === last || last.startsWith(t)) continue;                        // वही या छोटा पुराना रूप
+                if (t.startsWith(last)) { segs[segs.length - 1] = t; continue; }       // बढ़ा हुआ रूप
+                const a = last.split(/\s+/), b = t.split(/\s+/);
+                const setB = new Set(b);
+                let shared = 0;
+                a.forEach(w => { if (setB.has(w)) shared++; });
+                if (a[0] === b[0] && shared >= a.length * 0.6) {                      // शुरुआत वही, बीच के शब्द सुधरे हुए
+                    if (b.length >= a.length) segs[segs.length - 1] = t;
+                    continue;
+                }
+            }
+            segs.push(t);
+        }
+        return segs.join(" ");
+    }
+
     function attachHandlers(rec) {
         rec.lang = speechLangEl.value || 'hi-IN';
         rec.interimResults = true;
@@ -530,14 +554,9 @@
 
         // पूरे event.results से टेक्स्ट दोबारा बनाते हैं (Android Chrome में डुप्लिकेट टेक्स्ट से बचने के लिए)
         rec.onresult = (event) => {
-            let fin = '', interim = '';
-            for (let i = 0; i < event.results.length; i++) {
-                const res = event.results[i];
-                if (res.isFinal) fin += res[0].transcript + " ";
-                else interim += res[0].transcript;
-            }
-            sessionFinal = fin;
-            sessionInterim = interim;
+            // Android Chrome में हर नतीजा पिछले का बढ़ा हुआ रूप होता है, इसलिए उन्हें जोड़ने की जगह एक में मिलाते हैं
+            sessionFinal = mergeResults(event.results);
+            sessionInterim = "";
             const all = (committedText + sessionFinal + sessionInterim).trim();
             if (all) spokenEl.innerText = "आपने कहा: " + all;
         };
@@ -873,4 +892,3 @@ ${userPrompt}`;
 
 </body>
 </html>
-

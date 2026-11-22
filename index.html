@@ -94,6 +94,57 @@
         .o-info  { color: #79c0ff; }
         .o-ok    { color: #7ee787; }
 
+        /* एडिटर + लाइन नंबर */
+        .editor-wrap {
+            position: relative;
+            display: flex;
+            height: 450px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            background: #161b22;
+            overflow: hidden;
+            resize: vertical;
+        }
+        .editor-wrap:focus-within { border-color: #58a6ff; }
+        #lineNums {
+            margin: 0;
+            flex: none;
+            min-width: 44px;
+            padding: 15px 8px 60px 8px;
+            box-sizing: border-box;
+            text-align: right;
+            color: #6e7681;
+            background: #0d1117;
+            border-right: 1px solid #30363d;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 15px;
+            line-height: 1.5;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            white-space: pre;
+        }
+        .editor-wrap textarea#codeEditor {
+            flex: 1;
+            width: auto;
+            min-width: 0;
+            height: 100%;
+            border: none;
+            border-radius: 0;
+            resize: none;
+            white-space: pre;
+            overflow: auto;
+        }
+        #errBar {
+            display: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            background: rgba(255, 123, 114, 0.20);
+            border-left: 3px solid #ff7b72;
+            pointer-events: none;
+        }
+
         #customLangBox { display: none; margin-bottom: 12px; }
         #customLangBox input { width: 100%; box-sizing: border-box; }
 
@@ -277,6 +328,14 @@
         <label><input type="checkbox" id="learnMode" style="flex:none; width:auto; margin-right:6px;"> 📚 सीखने वाला मोड: कोड में आसान कमेंट्स जोड़ें (ऊपर चुनी हुई भाषा में)</label>
     </div>
 
+    <div class="learn-box">
+        <label><input type="checkbox" id="autoSyntax" style="flex:none; width:auto; margin-right:6px;"> 🪄 ऑटो-सिंटैक्स (AI): आप खुद टाइप करें या कीबोर्ड के माइक से बोलें, रुकने पर AI सही सिंटैक्स ( : ( ) { } ; _ वगैरह ) अपने आप लगा दे</label>
+    </div>
+
+    <div class="learn-box">
+        <label><input type="checkbox" id="autoBracket" style="flex:none; width:auto; margin-right:6px;"> ⌨️ ऑटो-ब्रैकेट और इंडेंट: टाइप करते समय ( [ { " ' अपने आप बंद हों और Enter पर इंडेंट लगे</label>
+    </div>
+
     <div class="controls">
         <button id="micBtn" class="btn-mic" onclick="toggleListening()">🎤 बोलना शुरू करें</button>
         <button id="undoBtn" class="btn-undo" onclick="undoCode()">↩️ पिछला कोड वापस लाएं</button>
@@ -294,7 +353,11 @@
     </div>
 
     <!-- कोड एडिटर -->
-    <textarea id="codeEditor" placeholder="# यहाँ अनलिमिटेड कोड जुड़ता जाएगा।&#10;# माइक दबाएं और बोलकर, या टाइप करके पूरा प्रोग्राम बनवाएं..."></textarea>
+    <div class="editor-wrap" id="editorWrap">
+        <pre id="lineNums" aria-hidden="true">1</pre>
+        <textarea id="codeEditor" wrap="off" spellcheck="false" autocapitalize="none" autocorrect="off" autocomplete="off" placeholder="# यहाँ अनलिमिटेड कोड जुड़ता जाएगा।&#10;# माइक दबाएं और बोलकर, या टाइप करके पूरा प्रोग्राम बनवाएं..."></textarea>
+        <div id="errBar"></div>
+    </div>
     <div class="counter" id="counter">लाइनें: 0 | अक्षर: 0</div>
 
     <!-- कोड यहीं चलाकर देखें -->
@@ -302,6 +365,7 @@
         <button id="runBtn" class="btn-run" onclick="runCode()">▶️ चलाकर देखें (Run)</button>
         <button id="fixBtn" class="btn-fix" onclick="fixWithAI()">🛠️ AI से गलती ठीक करवाएं</button>
         <button id="gotoBtn" class="btn-undo" onclick="gotoErrorLine()">📍 गलती वाली लाइन पर जाएं</button>
+        <button id="syntaxBtn" class="btn-fix" onclick="runSyntaxFix('manual')">🪄 सिंटैक्स अभी ठीक करें</button>
         <button id="bigBtn" class="btn-clear" onclick="togglePreviewSize()">⛶ प्रीव्यू बड़ा/छोटा</button>
         <button id="clearOutBtn" class="btn-clear" onclick="clearOutput(false)">🧹 आउटपुट साफ़ करें</button>
     </div>
@@ -326,6 +390,9 @@
             <li>कोड इसी ब्राउज़र में अपने-आप सेव होता रहता है, पर बहुत लंबा हो जाए तो बीच-बीच में <b>📋 कॉपी</b> करके कहीं रख लें।</li>
             <li><b>▶️ चलाकर देखें:</b> HTML/CSS, JavaScript और Python कोड यहीं चलाकर देख सकते हैं। गलती हो तो लाइन नंबर दिखेगा। <b>📍</b> दबाकर उसी लाइन पर पहुँचें और खुद ठीक करें, या <b>🛠️ AI से गलती ठीक करवाएं</b> दबाएं (टाइप वाले बॉक्स में कुछ लिखा हो तो AI उसे भी ध्यान में रखेगा)। Java, C++ जैसी भाषाएँ ब्राउज़र में नहीं चल सकतीं, उन्हें कॉपी करके अपने कंपाइलर में चलाएँ।</li>
             <li>कोड एडिटर में <b>Tab</b> दबाकर इंडेंटेशन दे सकते हैं, और खुद भी कोड बदल सकते हैं।</li>
+            <li><b>🔢 लाइन नंबर:</b> एडिटर में हर लाइन के आगे नंबर अपने आप दिखते हैं। चलाने पर गलती वाली लाइन लाल पट्टी से चिह्नित होती है। (लंबी लाइन देखने के लिए एडिटर को दाएँ-बाएँ खिसकाएँ।)</li>
+            <li><b>🪄 ऑटो-सिंटैक्स:</b> आप कीबोर्ड से टाइप करें या कीबोर्ड के माइक से बोलें, रुकने के 2-3 सेकंड बाद AI सिर्फ़ आपकी नई लाइनों में सही सिंटैक्स (: ( ) { } ; _ वगैरह) लगा देता है। पसंद न आए तो ↩️ दबाएं। चाहें तो ऊपर के टिक-बॉक्स से इसे बंद कर सकते हैं। किसी हिस्से को चुनकर <b>🪄 सिंटैक्स अभी ठीक करें</b> दबाने पर सिर्फ़ वही हिस्सा ठीक होता है।</li>
+            <li><b>⌨️ ऑटो-ब्रैकेट:</b> टाइप करते समय ( [ { " ' अपने आप बंद होते हैं और Enter दबाने पर इंडेंट अपने आप लगता है।</li>
             <li>काम पूरा होने पर <b>"📋 पूरा कोड कॉपी करें"</b> दबाकर Pydroid 3 / Acode / VS Code में पेस्ट करें।</li>
         </ul>
     </div>
@@ -362,6 +429,10 @@
     const writeModeEl  = document.getElementById('writeMode');
     const textLangEl   = document.getElementById('textLang');
     const counterEl    = document.getElementById('counter');
+    const lineNumsEl   = document.getElementById('lineNums');
+    const errBarEl     = document.getElementById('errBar');
+    let gutterCount = 0;       // लाइन नंबर वाले कॉलम की मौजूदा लाइनें
+    let shownErrLine = 0;      // जिस लाइन पर लाल पट्टी दिख रही है
 
     const SPOKEN_PLACEHOLDER = "आप जो बोलेंगे वह यहाँ लाइव दिखेगा...";
 
@@ -399,6 +470,7 @@
     }
     function updateCounter() {
         counterEl.innerText = "लाइनें: " + countLines(editor.value) + " | अक्षर: " + editor.value.length;
+        updateGutter();
     }
     let saveTimer = null;
     let saveWarned = false;
@@ -1106,11 +1178,14 @@ ${userPrompt}`;
         m.style.left = '-9999px';
         m.style.visibility = 'hidden';
         m.style.overflow = 'hidden';
+        m.wrap = 'off';
+        m.style.whiteSpace = 'pre';
         m.value = textBefore;
         document.body.appendChild(m);
         const y = m.scrollHeight;
         document.body.removeChild(m);
         editor.scrollTop = Math.max(0, y - editor.clientHeight / 3);
+        editor.scrollLeft = 0;
     }
 
     function gotoErrorLine() {
@@ -1263,6 +1338,284 @@ ${code}`;
             sendBtn.disabled = false;
             resetMic();
         }
+    }
+
+    // ============ 🔢 लाइन नंबर + गलती वाली लाइन की लाल पट्टी ============
+    function updateGutter() {
+        const n = Math.max(1, countLines(editor.value));
+        if (n !== gutterCount) {
+            gutterCount = n;
+            const arr = new Array(n);
+            for (let i = 0; i < n; i++) arr[i] = i + 1;
+            lineNumsEl.textContent = arr.join("\n");
+            lineNumsEl.style.minWidth = Math.max(44, String(n).length * 10 + 24) + 'px';
+        }
+        lineNumsEl.scrollTop = editor.scrollTop;
+        updateErrMark();
+    }
+
+    function updateErrMark() {
+        let ln = 0;
+        try { ln = (lastError && lastError.line) ? lastError.line : 0; } catch (e) { ln = 0; }
+        shownErrLine = ln;
+        if (!ln || ln > countLines(editor.value)) {
+            errBarEl.style.display = 'none';
+            return;
+        }
+        const cs = getComputedStyle(editor);
+        const lh = parseFloat(cs.lineHeight) || 22.5;
+        const pt = parseFloat(cs.paddingTop) || 0;
+        const top = pt + (ln - 1) * lh - editor.scrollTop;
+        if (top < -lh || top > editor.clientHeight) {
+            errBarEl.style.display = 'none';
+            return;
+        }
+        errBarEl.style.top = top + 'px';
+        errBarEl.style.height = lh + 'px';
+        errBarEl.style.display = 'block';
+    }
+
+    editor.addEventListener('scroll', () => {
+        lineNumsEl.scrollTop = editor.scrollTop;
+        if (shownErrLine) updateErrMark();
+    });
+    // गलती सेट/साफ़ होने पर पट्टी अपने-आप अपडेट हो
+    setInterval(() => {
+        try {
+            const ln = (lastError && lastError.line) ? lastError.line : 0;
+            if (ln !== shownErrLine) updateErrMark();
+        } catch (e) {}
+    }, 300);
+    updateGutter();
+
+    // ============ ⌨️ टाइप करते समय ऑटो-ब्रैकेट / ऑटो-इंडेंट ============
+    const autoBracketEl = document.getElementById('autoBracket');
+    const autoSyntaxEl  = document.getElementById('autoSyntax');
+    autoBracketEl.checked = localStorage.getItem('vc_auto_bracket') !== '0';   // शुरू में चालू
+    autoSyntaxEl.checked  = localStorage.getItem('vc_auto_syntax') !== '0';    // शुरू में चालू
+    autoBracketEl.addEventListener('change', () => localStorage.setItem('vc_auto_bracket', autoBracketEl.checked ? '1' : '0'));
+    autoSyntaxEl.addEventListener('change',  () => localStorage.setItem('vc_auto_syntax', autoSyntaxEl.checked ? '1' : '0'));
+
+    const PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
+    const WORDCH = /[A-Za-z0-9_\u0900-\u097F]/;
+
+    function helperOnInput(e) {
+        if (editor.selectionStart !== editor.selectionEnd) return;
+        const t = e.inputType;
+        const pos = editor.selectionStart;
+        const v = editor.value;
+
+        // ---- एक अक्षर टाइप हुआ ----
+        if (t === 'insertText' && e.data && e.data.length === 1) {
+            const ch = e.data;
+            const next = v.charAt(pos);
+
+            // बंद करने वाला अक्षर पहले से मौजूद है -> दोहराव हटाएँ (उसके ऊपर से निकल जाएँ)
+            if (')]}"\'`'.indexOf(ch) !== -1 && next === ch && v.charAt(pos - 1) === ch) {
+                editor.setRangeText('', pos, pos + 1, 'end');
+                codeChanged();
+                return;
+            }
+
+            if (PAIRS[ch]) {
+                const prev = v.charAt(pos - 2);
+                const isQuote = (ch === '"' || ch === "'" || ch === '`');
+                if (isQuote) {
+                    if (WORDCH.test(prev) || WORDCH.test(next)) return;   // don't जैसे शब्दों में नहीं
+                } else if (WORDCH.test(next)) {
+                    return;
+                }
+                editor.setRangeText(PAIRS[ch], pos, pos, 'start');   // कर्सर बीच में ही रहता है
+                codeChanged();
+            }
+            return;
+        }
+
+        // ---- Enter दबाया: पिछली लाइन जितना इंडेंट, ':' '{' '(' '[' के बाद 4 स्पेस ज़्यादा ----
+        if (t === 'insertLineBreak' || t === 'insertParagraph') {
+            const nlIdx = pos - 1;
+            if (v.charAt(nlIdx) !== '\n') return;
+            const prevStart = v.lastIndexOf('\n', nlIdx - 1) + 1;
+            const prevLine = v.slice(prevStart, nlIdx);
+            const base = (prevLine.match(/^[ \t]*/) || [''])[0];
+            const trimmed = prevLine.replace(/\s+$/, '');
+            const last = trimmed.slice(-1);
+            let indent = base;
+            if (/[:{(\[]/.test(last)) indent += '    ';
+
+            const nextCh = v.charAt(pos);
+            const closes = (last === '{' && nextCh === '}') || (last === '(' && nextCh === ')') || (last === '[' && nextCh === ']');
+            if (closes) {
+                // {|} पर Enter: बंद करने वाला चिह्न अगली लाइन पर चला जाए
+                editor.setRangeText(indent + "\n" + base, pos, pos, 'preserve');
+                editor.selectionStart = editor.selectionEnd = pos + indent.length;
+                codeChanged();
+            } else if (indent) {
+                editor.setRangeText(indent, pos, pos, 'preserve');
+                editor.selectionStart = editor.selectionEnd = pos + indent.length;
+                codeChanged();
+            }
+        }
+    }
+
+    // ============ 🪄 ऑटो-सिंटैक्स (AI): आपकी नई लाइनों में सही सिंटैक्स लगाना ============
+    let baseline = null;          // आख़िरी जाँचा हुआ कोड (इसी से पता चलता है कि आपने कौन-सी लाइनें बदलीं)
+    let syntaxTimer = null;
+    let syntaxBusy = false;
+    let syntaxHintShown = false;
+
+    editor.addEventListener('focus', () => { if (!syntaxBusy) baseline = editor.value; });
+    editor.addEventListener('beforeinput', () => { if (baseline === null) baseline = editor.value; });
+
+    editor.addEventListener('input', (e) => {
+        if (autoBracketEl.checked && !e.isComposing) helperOnInput(e);
+        scheduleSyntaxFix();
+    });
+
+    function scheduleSyntaxFix() {
+        clearTimeout(syntaxTimer);
+        if (!autoSyntaxEl.checked) return;
+        syntaxTimer = setTimeout(() => runSyntaxFix('auto'), 2500);
+    }
+
+    // पुराने और नए कोड में कौन-सी लाइनें बदली हैं: [start, end) (0 से शुरू)
+    function changedLineRegion(oldText, newText) {
+        const a = oldText.split('\n'), b = newText.split('\n');
+        let p = 0;
+        while (p < a.length && p < b.length && a[p] === b[p]) p++;
+        let q = 0;
+        while (q < a.length - p && q < b.length - p && a[a.length - 1 - q] === b[b.length - 1 - q]) q++;
+        return { start: p, end: b.length - q };
+    }
+
+    async function runSyntaxFix(mode) {
+        if (syntaxBusy) return;
+        if (isProcessing || isListening) {
+            if (mode === 'auto') scheduleSyntaxFix();
+            return;
+        }
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+            if (mode === 'manual') {
+                alert("कृपया पहले अपनी Gemini API Key दर्ज करें!");
+                apiKeyInput.focus();
+            } else if (!syntaxHintShown) {
+                syntaxHintShown = true;
+                statusEl.innerText = "ℹ️ ऑटो-सिंटैक्स के लिए ऊपर Gemini API Key डालें।";
+            }
+            return;
+        }
+
+        const full = editor.value;
+        if (!full.trim()) return;
+        const lines = full.split('\n');
+        let start, end;
+        const hasSel = editor.selectionStart !== editor.selectionEnd;
+
+        if (mode === 'manual' && hasSel) {
+            start = full.slice(0, editor.selectionStart).split('\n').length - 1;
+            end = Math.min(lines.length, full.slice(0, editor.selectionEnd).split('\n').length);
+        } else {
+            const reg = (baseline !== null) ? changedLineRegion(baseline, full) : null;
+            if (reg && reg.start < reg.end) {
+                start = reg.start;
+                end = reg.end;
+            } else if (mode === 'manual') {
+                start = (full.length <= 40000) ? 0 : Math.max(0, lines.length - 200);
+                end = lines.length;
+            } else {
+                return;   // ऑटो मोड में कुछ बदला नहीं
+            }
+        }
+        if (start >= end) return;
+
+        const target = lines.slice(start, end).join('\n');
+        if (!target.trim()) { baseline = full; return; }
+        if (target.length > (mode === 'manual' ? 60000 : 12000)) {
+            if (mode === 'manual') statusEl.innerText = "⚠️ चुना हुआ हिस्सा बहुत बड़ा है। छोटा हिस्सा चुनकर दोबारा दबाएं।";
+            else baseline = full;   // बहुत बड़ा paste: ऑटो-जाँच छोड़ दें
+            return;
+        }
+
+        const before = lines.slice(Math.max(0, start - 6), start).join('\n');
+        const after  = lines.slice(end, end + 3).join('\n');
+        const lang = (progLangEl.value === '__other__' ? customLangEl.value.trim() : progLangEl.value) || 'the selected programming language';
+
+        const promptText = `You are a ${lang} syntax auto-fixer inside a code editor.
+The user types or dictates code by hand on a phone keyboard (often with voice typing), so syntax characters are often missing and letter case is often wrong. Fix ONLY the syntax of the TARGET lines so that they become valid ${lang} code.
+
+Rules:
+1. Keep the user's words, names and logic. Do NOT add new features, do NOT complete unfinished logic, do NOT rename identifiers that are already valid, do NOT translate anything and do NOT add comments.
+2. You MAY fix: wrong letter case of keywords (phone keyboards capitalize the first letter, e.g. "Def" -> "def", "Import" -> "import", "If" -> "if"); missing or misplaced symbols such as ( ) [ ] { } < > : ; , . = quotes and operators; a missing colon, semicolon or brace at the right place; closing tags and closing quotes; spaces inside a name that must be one identifier (join them with underscores, e.g. "khojne wala saman" -> khojne_wala_saman); and correct indentation for ${lang}.
+3. Use the CONTEXT lines only to understand indentation and names. Do NOT output the context lines.
+4. Output ONLY the corrected TARGET lines as raw code. No markdown fences, no explanations. Keep the same number of lines unless a line truly must be split or joined.
+5. If the target lines are already correct, return them unchanged.
+
+=== CONTEXT BEFORE ===
+${before || "(none)"}
+
+=== TARGET LINES ===
+${target}
+
+=== CONTEXT AFTER ===
+${after || "(none)"}`;
+
+        syntaxBusy = true;
+        syntaxBtnBusy(true);
+        statusEl.innerText = "🪄 सिंटैक्स जाँचा जा रहा है...";
+        try {
+            const res = await askGemini(promptText, apiKey);
+            const fixed = res.text;
+
+            if (editor.value !== full) {          // इस बीच आपने कुछ और लिख दिया -> यह नतीजा न लगाएँ, बाद में दोबारा जाँचेंगे
+                syntaxBusy = false;
+                scheduleSyntaxFix();
+                return;
+            }
+            if (!fixed || res.truncated) throw new Error("AI ने पूरा जवाब नहीं दिया। दोबारा कोशिश करें।");
+            if (fixed === target) {
+                baseline = editor.value;
+                statusEl.innerText = "✅ सिंटैक्स पहले से सही है।";
+                return;
+            }
+            if (fixed.length < target.length * 0.5 || fixed.length > target.length * 3 + 300) {
+                statusEl.innerText = "⚠️ AI का बदलाव बहुत बड़ा लगा, इसलिए नहीं लगाया। आपका लिखा वैसा ही है।";
+                baseline = editor.value;
+                return;
+            }
+
+            // पुराने कोड में target वाली लाइनों को fixed से बदलें
+            let startIdx = 0;
+            for (let i = 0; i < start; i++) startIdx += lines[i].length + 1;
+            let endIdx = startIdx;
+            for (let i = start; i < end; i++) endIdx += lines[i].length + (i < end - 1 ? 1 : 0);
+
+            const oldCaret = editor.selectionStart;
+            const oldScroll = editor.scrollTop;
+            previousCode = full;   // Undo के लिए
+            editor.value = full.slice(0, startIdx) + fixed + full.slice(endIdx);
+
+            let newCaret = oldCaret;
+            if (oldCaret >= endIdx) newCaret = oldCaret + (fixed.length - (endIdx - startIdx));
+            else if (oldCaret >= startIdx) newCaret = startIdx + fixed.length;
+            editor.selectionStart = editor.selectionEnd = Math.min(newCaret, editor.value.length);
+            editor.scrollTop = oldScroll;
+
+            codeChanged();
+            baseline = editor.value;
+            statusEl.innerText = "🪄 सिंटैक्स सुधार दिया गया। (पसंद न आए तो ↩️ दबाएं)";
+        } catch (err) {
+            console.error(err);
+            statusEl.innerText = "⚠️ ऑटो-सिंटैक्स नहीं चल पाया: " + friendlyError(err);
+        } finally {
+            syntaxBusy = false;
+            syntaxBtnBusy(false);
+        }
+    }
+
+    function syntaxBtnBusy(b) {
+        const el = document.getElementById('syntaxBtn');
+        if (el) el.disabled = b;
     }
 
     // ============ Undo ============

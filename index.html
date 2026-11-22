@@ -1,1 +1,876 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Universal Voice Coder (Unlimited)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 15px;
+        }
+        .container { max-width: 900px; margin: auto; }
+        h2 { color: #58a6ff; text-align: center; margin-bottom: 20px; }
+
+        .api-box, .lang-box { display: flex; gap: 10px; margin-bottom: 12px; }
+
+        input, select {
+            flex: 1;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            background-color: #161b22;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+            min-width: 0;
+        }
+        input:focus, select:focus { border-color: #58a6ff; }
+
+        .controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+            min-width: 140px;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-mic { background-color: #238636; color: white; }
+        .btn-mic.listening { background-color: #da3633; animation: pulse 1.5s infinite; }
+        .btn-mic.processing { background-color: #8957e5; animation: none; }
+
+        .btn-copy { background-color: #1f6feb; color: white; }
+        .btn-undo { background-color: #9e6a03; color: white; }
+        .btn-clear { background-color: #30363d; color: white; }
+        .btn-send { background-color: #8957e5; color: white; }
+
+        #customLangBox { display: none; margin-bottom: 12px; }
+        #customLangBox input { width: 100%; box-sizing: border-box; }
+
+        .learn-box { margin-bottom: 12px; font-size: 14px; color: #8b949e; }
+        .learn-box label { cursor: pointer; }
+        .counter { text-align: right; font-size: 13px; color: #8b949e; margin: 6px 2px 0; }
+
+        .type-box { display: flex; gap: 10px; margin-bottom: 15px; align-items: stretch; }
+        .type-box textarea {
+            flex: 3;
+            height: 80px;
+            min-height: 60px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+            font-size: 15px;
+            line-height: 1.4;
+            padding: 12px;
+            resize: vertical;
+        }
+        .type-box button { flex: 1; min-width: 100px; }
+
+        #status {
+            text-align: center;
+            color: #d29922;
+            margin-bottom: 8px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+        #spokenText {
+            background-color: #161b22;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-style: italic;
+            color: #8b949e;
+            border: 1px solid #30363d;
+            min-height: 22px;
+            line-height: 1.4;
+        }
+        textarea {
+            width: 100%;
+            height: 450px;
+            background-color: #161b22;
+            color: #7ee787;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 15px;
+            line-height: 1.5;
+            padding: 15px;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            box-sizing: border-box;
+            tab-size: 4;
+            resize: vertical;
+            outline: none;
+        }
+        textarea:focus { border-color: #58a6ff; }
+
+        .help-box {
+            background: #161b22;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            border: 1px solid #30363d;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .help-box ul { margin: 8px 0; padding-left: 20px; color: #8b949e; }
+        .help-box li { margin-bottom: 6px; }
+
+        @keyframes pulse {
+            0%   { opacity: 1; box-shadow: 0 0 0 0 rgba(218,54,51,0.4); }
+            50%  { opacity: 0.85; box-shadow: 0 0 0 12px rgba(218,54,51,0); }
+            100% { opacity: 1; box-shadow: 0 0 0 0 rgba(218,54,51,0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎤 AI Universal Voice Coder (Unlimited)</h2>
+
+    <!-- API Key -->
+    <div class="api-box">
+        <input type="password" id="apiKey" placeholder="यहाँ अपनी Gemini API Key डालें (ब्राउज़र में सेव रहेगी)...">
+    </div>
+
+    <!-- प्रोग्रामिंग भाषा + बोलने की भाषा -->
+    <div class="lang-box">
+        <select id="progLang">
+            <option value="Python">Python</option>
+            <option value="HTML/CSS">HTML / CSS</option>
+            <option value="JavaScript">JavaScript</option>
+            <option value="TypeScript">TypeScript</option>
+            <option value="React (JSX)">React (JSX)</option>
+            <option value="Node.js">Node.js</option>
+            <option value="Java">Java</option>
+            <option value="Kotlin">Kotlin</option>
+            <option value="Swift">Swift</option>
+            <option value="Dart (Flutter)">Dart (Flutter)</option>
+            <option value="C">C</option>
+            <option value="C++">C++</option>
+            <option value="C#">C#</option>
+            <option value="Go">Go</option>
+            <option value="Rust">Rust</option>
+            <option value="PHP">PHP</option>
+            <option value="Ruby">Ruby</option>
+            <option value="SQL">SQL</option>
+            <option value="Bash/Shell">Bash / Shell</option>
+            <option value="Solidity">Solidity</option>
+            <option value="R">R</option>
+            <option value="Lua">Lua</option>
+            <option value="Perl">Perl</option>
+            <option value="MATLAB">MATLAB</option>
+            <option value="Arduino (C++)">Arduino (C++)</option>
+            <option value="__other__">✏️ Other (कोई भी भाषा खुद लिखें)</option>
+        </select>
+        <select id="speechLang">
+            <option value="hi-IN">बोलने की भाषा: हिंदी / हिंग्लिश</option>
+            <option value="en-IN">English (India)</option>
+            <option value="en-US">English (US)</option>
+            <option value="en-GB">English (UK)</option>
+            <option value="ur-PK">اردو (Urdu)</option>
+            <option value="bn-IN">বাংলা (Bengali)</option>
+            <option value="ta-IN">தமிழ் (Tamil)</option>
+            <option value="te-IN">తెలుగు (Telugu)</option>
+            <option value="mr-IN">मराठी (Marathi)</option>
+            <option value="gu-IN">ગુજરાતી (Gujarati)</option>
+            <option value="kn-IN">ಕನ್ನಡ (Kannada)</option>
+            <option value="ml-IN">മലയാളം (Malayalam)</option>
+            <option value="pa-IN">ਪੰਜਾਬੀ (Punjabi)</option>
+            <option value="ne-NP">नेपाली (Nepali)</option>
+            <option value="si-LK">සිංහල (Sinhala)</option>
+            <option value="ar-SA">العربية (Arabic)</option>
+            <option value="fa-IR">فارسی (Persian)</option>
+            <option value="he-IL">עברית (Hebrew)</option>
+            <option value="tr-TR">Türkçe (Turkish)</option>
+            <option value="es-ES">Español (Spanish)</option>
+            <option value="fr-FR">Français (French)</option>
+            <option value="de-DE">Deutsch (German)</option>
+            <option value="it-IT">Italiano (Italian)</option>
+            <option value="pt-BR">Português (Brazil)</option>
+            <option value="nl-NL">Nederlands (Dutch)</option>
+            <option value="pl-PL">Polski (Polish)</option>
+            <option value="ru-RU">Русский (Russian)</option>
+            <option value="uk-UA">Українська (Ukrainian)</option>
+            <option value="ja-JP">日本語 (Japanese)</option>
+            <option value="ko-KR">한국어 (Korean)</option>
+            <option value="zh-CN">中文 简体 (Chinese)</option>
+            <option value="zh-TW">中文 繁體 (Chinese Traditional)</option>
+            <option value="id-ID">Bahasa Indonesia</option>
+            <option value="ms-MY">Bahasa Melayu (Malay)</option>
+            <option value="vi-VN">Tiếng Việt (Vietnamese)</option>
+            <option value="th-TH">ไทย (Thai)</option>
+            <option value="fil-PH">Filipino</option>
+            <option value="sw-KE">Kiswahili (Swahili)</option>
+        </select>
+    </div>
+
+    <!-- Other चुनने पर कोई भी प्रोग्रामिंग भाषा का नाम लिखें -->
+    <div id="customLangBox">
+        <input type="text" id="customLang" placeholder="प्रोग्रामिंग भाषा का नाम लिखें (जैसे: Scala, Haskell, Assembly, Flutter, Django...)">
+    </div>
+
+    <div class="lang-box">
+        <select id="writeMode">
+            <option value="append">➕ नीचे जोड़ता जाए (अनलिमिटेड, लाइन दर लाइन — सबसे सुरक्षित)</option>
+            <option value="rewrite">✏️ पूरा कोड दोबारा लिखे/सुधारे (सिर्फ़ छोटे कोड के लिए)</option>
+        </select>
+    </div>
+
+    <div class="lang-box">
+        <select id="textLang">
+            <option value="mixed">कोड English में + कमेंट/स्क्रीन-टेक्स्ट हिंदी में</option>
+            <option value="auto">कमेंट/टेक्स्ट उसी भाषा में जिसमें मैं बोलूँ/लिखूँ</option>
+            <option value="english">सब कुछ English में</option>
+            <option value="hinglish">कमेंट Hinglish (रोमन हिंदी) में</option>
+        </select>
+    </div>
+
+    <div class="learn-box">
+        <label><input type="checkbox" id="learnMode" style="flex:none; width:auto; margin-right:6px;"> 📚 सीखने वाला मोड: कोड में आसान कमेंट्स जोड़ें (ऊपर चुनी हुई भाषा में)</label>
+    </div>
+
+    <div class="controls">
+        <button id="micBtn" class="btn-mic" onclick="toggleListening()">🎤 बोलना शुरू करें</button>
+        <button id="undoBtn" class="btn-undo" onclick="undoCode()">↩️ पिछला कोड वापस लाएं</button>
+        <button id="copyBtn" class="btn-copy" onclick="copyCode()">📋 पूरा कोड कॉपी करें</button>
+        <button id="clearBtn" class="btn-clear" onclick="clearCode()">🗑️ सब साफ़ करें</button>
+    </div>
+
+    <div id="status">तैयार है! भाषा चुनें, माइक दबाएं और लगातार बोलते जाएं...</div>
+    <div id="spokenText">आप जो बोलेंगे वह यहाँ लाइव दिखेगा...</div>
+
+    <!-- टाइप करके निर्देश देने का बॉक्स -->
+    <div class="type-box">
+        <textarea id="typedText" placeholder="✍️ या यहाँ किसी भी भाषा में टाइप करके बताएं कि क्या कोड बनवाना है... (Ctrl+Enter दबाकर भी भेज सकते हैं)"></textarea>
+        <button id="sendBtn" class="btn-send" onclick="sendTyped()">📤 भेजें</button>
+    </div>
+
+    <!-- कोड एडिटर -->
+    <textarea id="codeEditor" placeholder="# यहाँ अनलिमिटेड कोड जुड़ता जाएगा।&#10;# माइक दबाएं और बोलकर, या टाइप करके पूरा प्रोग्राम बनवाएं..."></textarea>
+    <div class="counter" id="counter">लाइनें: 0 | अक्षर: 0</div>
+
+    <!-- निर्देश -->
+    <div class="help-box">
+        <strong>💡 अनलिमिटेड कोडिंग के नियम:</strong>
+        <ul>
+            <li>ऊपर प्रोग्रामिंग भाषा चुनें (सूची में न हो तो <b>Other</b> चुनकर कोई भी नाम लिखें) और अपनी <b>Gemini API Key</b> डालें।</li>
+            <li>अपनी बोलने की भाषा चुनें। <b>🎤 बोलना शुरू करें</b> दबाएं और <b>लगातार बोलते जाएं</b> — चुप होने पर माइक खुद-ब-खुद चालू रहेगा।</li>
+            <li>जब बोलना पूरा हो जाए, तो <b>उसी बटन पर दोबारा क्लिक करें</b>। AI पुराना कोड सुरक्षित रखकर नया लॉजिक जोड़ देगा।</li>
+            <li>बोल नहीं सकते? <b>टाइप करके भेजें</b> वाले बॉक्स में किसी भी भाषा में लिखें और <b>📤 भेजें</b> दबाएं।</li>
+            <li>अगर AI ने कुछ गलत कर दिया, तो <b>↩️ पिछला कोड वापस लाएं</b> दबाएं।</li>
+            <li><b>➕ नीचे जोड़ता जाए</b> मोड में आप एक, दो या तीन लाइन जो भी बोलें, AI सिर्फ़ वही नया हिस्सा नीचे जोड़ता जाता है। इसलिए कोड कितना भी लंबा हो जाए, चलता रहेगा। कोड बीच में कट जाए तो "आगे का कोड पूरा करो" बोलें।</li>
+            <li><b>हिंदी + English साथ में:</b> कोड के keywords हमेशा English में ही रहेंगे (Python वगैरह हिंदी नहीं समझते)। हिंदी सिर्फ़ कमेंट्स और स्क्रीन पर दिखने वाले टेक्स्ट (print, बटन के नाम) में आएगी। किसी खास लाइन के लिए बोल भी सकते हैं, जैसे "यह print हिंदी में करो"।</li>
+            <li>कोड इसी ब्राउज़र में अपने-आप सेव होता रहता है, पर बहुत लंबा हो जाए तो बीच-बीच में <b>📋 कॉपी</b> करके कहीं रख लें।</li>
+            <li>कोड एडिटर में <b>Tab</b> दबाकर इंडेंटेशन दे सकते हैं, और खुद भी कोड बदल सकते हैं।</li>
+            <li>काम पूरा होने पर <b>"📋 पूरा कोड कॉपी करें"</b> दबाकर Pydroid 3 / Acode / VS Code में पेस्ट करें।</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    // ============ ग्लोबल स्टेट ============
+    const MODEL   = "gemini-3.5-flash-lite";
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent";
+
+    let recognition = null;
+    let isListening = false;     // माइक चालू है
+    let isProcessing = false;    // AI काम कर रहा है
+    let manualStop = false;      // यूज़र ने खुद बटन दबाकर रोका
+    let finishing = false;       // finish() दो बार न चले
+    let committedText = "";      // पिछले (auto-restart) सेशन्स का बोला हुआ
+    let sessionFinal = "";       // मौजूदा सेशन का final टेक्स्ट
+    let sessionInterim = "";     // मौजूदा सेशन का अधूरा टेक्स्ट
+    let previousCode = null;     // Undo के लिए
+
+    const apiKeyInput  = document.getElementById('apiKey');
+    const micBtn       = document.getElementById('micBtn');
+    const undoBtn      = document.getElementById('undoBtn');
+    const sendBtn      = document.getElementById('sendBtn');
+    const statusEl     = document.getElementById('status');
+    const spokenEl     = document.getElementById('spokenText');
+    const editor       = document.getElementById('codeEditor');
+    const typedEl      = document.getElementById('typedText');
+    const progLangEl   = document.getElementById('progLang');
+    const speechLangEl = document.getElementById('speechLang');
+    const customLangEl = document.getElementById('customLang');
+    const customBoxEl  = document.getElementById('customLangBox');
+    const learnModeEl  = document.getElementById('learnMode');
+    const writeModeEl  = document.getElementById('writeMode');
+    const textLangEl   = document.getElementById('textLang');
+    const counterEl    = document.getElementById('counter');
+
+    const SPOKEN_PLACEHOLDER = "आप जो बोलेंगे वह यहाँ लाइव दिखेगा...";
+
+    // ============ सेटिंग्स: सेव / लोड ============
+    apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+    apiKeyInput.addEventListener('input', () => {
+        localStorage.setItem('gemini_api_key', apiKeyInput.value.trim());
+    });
+
+    const savedProg = localStorage.getItem('vc_prog_lang');
+    if (savedProg && Array.from(progLangEl.options).some(o => o.value === savedProg)) {
+        progLangEl.value = savedProg;
+    } else {
+        progLangEl.value = 'Python';
+    }
+    const savedSpeech = localStorage.getItem('vc_speech_lang');
+    if (savedSpeech && Array.from(speechLangEl.options).some(o => o.value === savedSpeech)) {
+        speechLangEl.value = savedSpeech;
+    } else {
+        speechLangEl.value = 'hi-IN';
+    }
+    customLangEl.value = localStorage.getItem('vc_custom_lang') || '';
+    learnModeEl.checked = localStorage.getItem('vc_learn_mode') === '1';
+
+    const savedWrite = localStorage.getItem('vc_write_mode');
+    writeModeEl.value = (savedWrite === 'rewrite') ? 'rewrite' : 'append';
+    const savedTextLang = localStorage.getItem('vc_text_lang');
+    textLangEl.value = (savedTextLang && Array.from(textLangEl.options).some(o => o.value === savedTextLang)) ? savedTextLang : 'mixed';
+    writeModeEl.addEventListener('change', () => localStorage.setItem('vc_write_mode', writeModeEl.value));
+    textLangEl.addEventListener('change',  () => localStorage.setItem('vc_text_lang', textLangEl.value));
+
+    // ============ लाइन/अक्षर काउंटर + कोड ऑटो-सेव ============
+    function countLines(text) {
+        return text ? text.split('\n').length : 0;
+    }
+    function updateCounter() {
+        counterEl.innerText = "लाइनें: " + countLines(editor.value) + " | अक्षर: " + editor.value.length;
+    }
+    let saveTimer = null;
+    let saveWarned = false;
+    function autoSaveCode() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+            try {
+                localStorage.setItem('vc_saved_code', editor.value);
+            } catch (e) {
+                if (!saveWarned) {
+                    saveWarned = true;
+                    statusEl.innerText = "⚠️ ऑटो-सेव की जगह भर गई है। कोड को 📋 कॉपी करके कहीं सुरक्षित रख लें।";
+                }
+            }
+        }, 500);
+    }
+    function codeChanged() {
+        updateCounter();
+        autoSaveCode();
+    }
+    editor.addEventListener('input', codeChanged);
+
+    const savedCode = localStorage.getItem('vc_saved_code');
+    if (savedCode) editor.value = savedCode;
+    updateCounter();
+
+    // नया हिस्सा पुराने कोड में जोड़ें (HTML में </body> से ठीक पहले, बाकी भाषाओं में सबसे नीचे)
+    function mergeAppend(oldCode, newPart, lang) {
+        if (!oldCode.trim()) return newPart;
+        if (/html/i.test(lang)) {
+            const idx = oldCode.toLowerCase().lastIndexOf('</body>');
+            if (idx !== -1) {
+                return oldCode.slice(0, idx).replace(/\s+$/, '') + "\n" + newPart + "\n\n" + oldCode.slice(idx);
+            }
+        }
+        return oldCode.replace(/\s+$/, '') + "\n" + newPart + "\n";
+    }
+
+    function updateCustomBox() {
+        customBoxEl.style.display = (progLangEl.value === '__other__') ? 'block' : 'none';
+    }
+    updateCustomBox();
+
+    progLangEl.addEventListener('change', () => {
+        localStorage.setItem('vc_prog_lang', progLangEl.value);
+        updateCustomBox();
+        if (progLangEl.value === '__other__') customLangEl.focus();
+    });
+    speechLangEl.addEventListener('change', () => localStorage.setItem('vc_speech_lang', speechLangEl.value));
+    customLangEl.addEventListener('input',  () => localStorage.setItem('vc_custom_lang', customLangEl.value.trim()));
+    learnModeEl.addEventListener('change',  () => localStorage.setItem('vc_learn_mode', learnModeEl.checked ? '1' : '0'));
+
+    // चुनी हुई प्रोग्रामिंग भाषा का नाम (Other हो तो यूज़र का लिखा नाम)
+    function getProgLang() {
+        if (progLangEl.value === '__other__') {
+            const name = customLangEl.value.trim();
+            if (!name) {
+                statusEl.innerText = "⚠️ कृपया प्रोग्रामिंग भाषा का नाम लिखें (Other वाले बॉक्स में)।";
+                customLangEl.focus();
+                return '';
+            }
+            return name;
+        }
+        return progLangEl.value;
+    }
+
+    // ============ Tab इंडेंटेशन सपोर्ट ============
+    editor.addEventListener('keydown', function (e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end   = this.selectionEnd;
+            this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 4;
+            codeChanged();
+        }
+    });
+
+    // ============ Ctrl+Enter से टाइप किया हुआ भेजें ============
+    typedEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            sendTyped();
+        }
+    });
+
+    // ============ टाइप करके भेजें ============
+    function sendTyped() {
+        if (isProcessing) return;
+        if (isListening) {
+            statusEl.innerText = "⚠️ पहले माइक बंद करें, फिर टाइप किया हुआ भेजें।";
+            return;
+        }
+
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+            alert("कृपया पहले अपनी Gemini API Key दर्ज करें!");
+            apiKeyInput.focus();
+            return;
+        }
+        localStorage.setItem('gemini_api_key', apiKey);
+
+        const text = typedEl.value.trim();
+        if (!text) {
+            statusEl.innerText = "⚠️ पहले बॉक्स में लिखिए कि क्या कोड बनवाना है।";
+            typedEl.focus();
+            return;
+        }
+        if (!getProgLang()) return;
+
+        spokenEl.innerText = "आपने लिखा: " + text;
+        statusEl.innerText = "⏳ AI कोड अपडेट कर रहा है...";
+        appendUniversalCode(text, apiKey, true);
+    }
+
+    // ============ माइक टॉगल ============
+    function toggleListening() {
+        if (isProcessing) return;
+
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+            alert("कृपया पहले अपनी Gemini API Key दर्ज करें!");
+            apiKeyInput.focus();
+            return;
+        }
+        localStorage.setItem('gemini_api_key', apiKey);
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("आपका ब्राउज़र Voice Recognition सपोर्ट नहीं करता। कृपया Google Chrome या Microsoft Edge का उपयोग करें। (आप टाइप करके भी कोड बनवा सकते हैं।)");
+            return;
+        }
+
+        // ---- अगर सुन रहा है -> रोकें (आख़िरी शब्द आने का इंतज़ार करके AI को भेजेंगे) ----
+        if (isListening) {
+            manualStop = true;
+            micBtn.disabled = true;
+            micBtn.innerText = "⏳ आख़िरी शब्द पूरे हो रहे हैं...";
+            statusEl.innerText = "⏳ आख़िरी शब्द प्रोसेस हो रहे हैं...";
+            try { recognition.stop(); } catch (e) {}
+            // अगर onend किसी वजह से न आए तो 2 सेकंड बाद खुद आगे बढ़ें
+            setTimeout(finishSession, 2000);
+            return;
+        }
+
+        // बोलना शुरू करने से पहले ही भाषा का नाम जाँच लें (ताकि बोला हुआ बेकार न जाए)
+        if (!getProgLang()) return;
+
+        startSession();
+    }
+
+    function startSession() {
+        manualStop = false;
+        finishing = false;
+        committedText = "";
+        sessionFinal = "";
+        sessionInterim = "";
+
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        attachHandlers(recognition);
+
+        try {
+            isListening = true;
+            recognition.start();
+        } catch (e) {
+            isListening = false;
+            statusEl.innerText = "❌ माइक शुरू नहीं हो पाया। पेज रिफ्रेश करें।";
+        }
+    }
+
+    function attachHandlers(rec) {
+        rec.lang = speechLangEl.value || 'hi-IN';
+        rec.interimResults = true;
+        rec.continuous = true;
+        rec.maxAlternatives = 1;
+
+        rec.onstart = () => {
+            micBtn.classList.add('listening');
+            micBtn.innerText = "🛑 बोलना बंद करें और प्रोसेस करें";
+            statusEl.innerText = "🎙️ बोलते जाएं... (पूरा बोलने पर इसी बटन पर क्लिक करें)";
+            if (!committedText) spokenEl.innerText = "सुन रहा हूँ...";
+        };
+
+        // पूरे event.results से टेक्स्ट दोबारा बनाते हैं (Android Chrome में डुप्लिकेट टेक्स्ट से बचने के लिए)
+        rec.onresult = (event) => {
+            let fin = '', interim = '';
+            for (let i = 0; i < event.results.length; i++) {
+                const res = event.results[i];
+                if (res.isFinal) fin += res[0].transcript + " ";
+                else interim += res[0].transcript;
+            }
+            sessionFinal = fin;
+            sessionInterim = interim;
+            const all = (committedText + sessionFinal + sessionInterim).trim();
+            if (all) spokenEl.innerText = "आपने कहा: " + all;
+        };
+
+        rec.onerror = (event) => {
+            if (event.error === 'no-speech' || event.error === 'aborted') return;
+
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                statusEl.innerText = "❌ माइक की अनुमति नहीं है। ब्राउज़र सेटिंग में Allow करें।";
+                manualStop = true;
+                finishing = true;      // कुछ भेजना नहीं है
+                resetMic();
+                return;
+            }
+            if (event.error === 'language-not-supported') {
+                statusEl.innerText = "❌ यह बोलने की भाषा आपके ब्राउज़र में सपोर्ट नहीं है। दूसरी भाषा चुनें या टाइप करके भेजें।";
+                manualStop = true;
+                finishing = true;
+                resetMic();
+                return;
+            }
+            if (event.error === 'network') {
+                statusEl.innerText = "❌ नेटवर्क त्रुटि। जितना बोला गया उतना प्रोसेस किया जा रहा है...";
+                manualStop = true;     // onend आने पर जो बोला गया वो भेज देंगे
+            } else {
+                statusEl.innerText = "❌ त्रुटि: " + event.error;
+            }
+        };
+
+        rec.onend = () => {
+            if (manualStop) {
+                finishSession();
+                return;
+            }
+            // ब्राउज़र ने चुप्पी पर खुद बंद किया -> बोला हुआ सेव करके माइक फिर चालू करें
+            if (isListening && !isProcessing) {
+                committedText += sessionFinal + sessionInterim;
+                if (committedText && !committedText.endsWith(" ")) committedText += " ";
+                sessionFinal = "";
+                sessionInterim = "";
+                setTimeout(() => {
+                    if (isListening && !manualStop) {
+                        try { rec.start(); } catch (e) {}
+                    }
+                }, 250);
+            }
+        };
+    }
+
+    // बोलना खत्म -> जो भी टेक्स्ट मिला उसे AI को भेजें (सिर्फ़ एक बार चलता है)
+    function finishSession() {
+        if (finishing) return;
+        finishing = true;
+        isListening = false;
+
+        const speech = (committedText + sessionFinal + sessionInterim).trim();
+        committedText = "";
+        sessionFinal = "";
+        sessionInterim = "";
+
+        resetMic();
+
+        if (speech === "") {
+            statusEl.innerText = "⚠️ आपने कुछ नहीं बोला। दोबारा कोशिश करें।";
+            spokenEl.innerText = SPOKEN_PLACEHOLDER;
+            return;
+        }
+        spokenEl.innerText = "आपने कहा: " + speech;
+        statusEl.innerText = "⏳ AI कोड अपडेट कर रहा है...";
+        appendUniversalCode(speech, apiKeyInput.value.trim(), false);
+    }
+
+    function resetMic() {
+        isListening = false;
+        micBtn.classList.remove('listening');
+        micBtn.classList.remove('processing');
+        micBtn.disabled = false;
+        micBtn.innerText = "🎤 बोलना शुरू करें";
+    }
+
+    // ============ AI कोड जनरेशन ============
+    async function appendUniversalCode(userPrompt, apiKey, fromTyping) {
+        const currentCode  = editor.value;
+        const selectedLang = getProgLang();
+        if (!selectedLang) return;
+
+        isProcessing = true;
+        micBtn.disabled = true;
+        sendBtn.disabled = true;
+        micBtn.classList.remove('listening');
+        micBtn.classList.add('processing');
+        micBtn.innerText = "⏳ AI लिख रहा है...";
+        statusEl.innerText = "⏳ Gemini AI कोड बना रहा है, कृपया प्रतीक्षा करें...";
+
+        const isAppend = (writeModeEl.value === 'append');
+        const hasCode  = currentCode.trim() !== "";
+        const isHtml   = /html/i.test(selectedLang);
+
+        // बहुत लंबे कोड में AI को सिर्फ़ शुरू और आख़िरी हिस्सा संदर्भ (context) के लिए भेजा जाता है
+        const MAX_CTX = 300000;
+
+        if (!isAppend && currentCode.length > MAX_CTX) {
+            statusEl.innerText = "⚠️ कोड बहुत बड़ा है, 'दोबारा लिखे' मोड में सुरक्षित नहीं। ऊपर से ➕ नीचे जोड़ता जाए मोड चुनें।";
+            isProcessing = false;
+            sendBtn.disabled = false;
+            resetMic();
+            return;
+        }
+
+        let codeForAI = currentCode;
+        if (currentCode.length > MAX_CTX) {
+            codeForAI = currentCode.slice(0, 20000)
+                + "\n\n... [MIDDLE PART OF THE FILE OMITTED TO SAVE SPACE - IT STILL EXISTS, DO NOT REPEAT IT] ...\n\n"
+                + currentCode.slice(-(MAX_CTX - 20000));
+        }
+
+        // भाषा के नियम: keywords हमेशा English, कमेंट/टेक्स्ट चुनी हुई भाषा में
+        const langRules = {
+            mixed:    "Write ALL comments and ALL user-visible text (print/log messages, button labels, UI text, alerts, placeholders) in HINDI using Devanagari script. Keep every keyword, syntax element, built-in name, function name and variable name in ENGLISH (ASCII), because programming syntax can never be in Hindi.",
+            auto:     "Write comments and user-visible text in the SAME human language the user used in the request. Keep every keyword, syntax element, built-in name, function name and variable name in ENGLISH (ASCII), because programming syntax can never be in another human language.",
+            english:  "Write everything in ENGLISH, including comments and user-visible text.",
+            hinglish: "Write comments in HINGLISH (Hindi written in Roman/English letters). Keep user-visible text in the language the user asked for, otherwise English. Keep every keyword, syntax element, built-in name, function name and variable name in ENGLISH (ASCII)."
+        };
+        const textRule  = langRules[textLangEl.value] || langRules.mixed;
+        const learnRule = learnModeEl.checked
+            ? "\n9. LEARNING MODE: add short, simple, beginner-friendly comments explaining the code (in the comment language defined above)."
+            : "";
+        const htmlNote  = isHtml
+            ? " (for HTML: it is inserted just before the closing body tag, so output only elements, style blocks or script blocks - no html, head or body wrapper tags - unless the existing code is empty)"
+            : "";
+
+        const appendPrompt = `You are an expert ${selectedLang} programming assistant working in APPEND-ONLY mode.
+The user builds the program step by step by dictating a few lines at a time. Write ONLY the NEW code needed for the new request.
+
+Rules:
+1. Output ONLY the NEW lines of code. Do NOT repeat, rewrite or modify any existing code.
+2. Your output will be added at the END of the existing code${htmlNote}. Continue seamlessly: same style, same indentation level where the existing code ends, reuse existing variables/functions/imports, and never re-import or redefine what already exists.
+3. If the existing code stops in the middle of a statement or function (it was cut off), simply continue it from exactly where it stopped.
+4. Ensure 100% correct syntax and indentation for ${selectedLang}.
+5. ${textRule}
+6. If the user explicitly says that a specific message, comment or label must be in Hindi or in English, follow that exactly.
+7. The user may speak or type in ANY human language (Hindi, Hinglish, English, Urdu, Tamil, Arabic, Spanish, etc.) - understand the intent correctly.
+8. Output ONLY raw code. No markdown fences, no greetings, no explanations. If the existing code is empty, write the beginning of the program (a complete starting structure) for the request.${learnRule}
+
+=== EXISTING CODE ===
+${hasCode ? codeForAI : "(empty - write the beginning of the program)"}
+
+=== NEW USER REQUEST ===
+${userPrompt}`;
+
+        const rewritePrompt = `You are an expert ${selectedLang} programming assistant.
+Take the EXISTING CODE below and seamlessly APPEND, EXTEND or INTEGRATE the new user request into it.
+
+Rules:
+1. Keep ALL existing code intact. Never delete or shorten it.
+2. Add the new requested logic at the correct place with proper structure.
+3. Ensure 100% correct syntax, formatting and indentation for ${selectedLang}.
+4. The user may speak or type in ANY human language (Hindi, Hinglish, English, Urdu, Tamil, Arabic, Spanish, etc.) - understand the intent correctly.
+5. Output ONLY the complete updated raw code.
+6. Do NOT wrap output in markdown code fences. No greetings. No explanations.
+7. If the existing code is empty, generate a complete working program from the request.
+8. ${textRule} If the user explicitly says that a specific message, comment or label must be in Hindi or in English, follow that exactly.${learnRule}
+
+=== EXISTING CODE ===
+${hasCode ? currentCode : "(empty - generate fresh code)"}
+
+=== NEW USER REQUEST ===
+${userPrompt}`;
+
+        const systemPrompt = isAppend ? appendPrompt : rewritePrompt;
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 मिनट
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': apiKey
+                },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: systemPrompt }] }],
+                    generationConfig: {
+                        temperature: 0.2,
+                        maxOutputTokens: 32768
+                    }
+                }),
+                signal: controller.signal
+            });
+
+            const data = await response.json();
+
+            // --- API Error ---
+            if (data.error) {
+                throw new Error(data.error.message || "API से त्रुटि मिली");
+            }
+
+            // --- Safety / खाली रिस्पॉन्स ---
+            if (!data.candidates || !data.candidates[0]) {
+                throw new Error("AI ने कोई जवाब नहीं दिया (सुरक्षा फ़िल्टर या खाली रिस्पॉन्स)। दोबारा कोशिश करें।");
+            }
+
+            const cand = data.candidates[0];
+            if (!cand.content || !cand.content.parts || !cand.content.parts.length) {
+                throw new Error("AI रिस्पॉन्स अधूरा है। दोबारा बोलिए।");
+            }
+
+            // सभी text parts जोड़ें (thinking parts छोड़कर)
+            let aiCode = cand.content.parts
+                .filter(p => typeof p.text === "string" && !p.thought)
+                .map(p => p.text)
+                .join("");
+
+            // --- सिर्फ़ बाहरी Markdown Fences हटाएँ (अंदर के backticks सुरक्षित) ---
+            // पहली लाइन की indentation सुरक्षित रखते हुए सिर्फ़ ख़ाली लाइनें और fences हटाएँ
+            aiCode = aiCode.replace(/^\s*\n/, '').replace(/\s+$/, '');
+            const fenceStart = aiCode.match(/^[ \t]*```[a-zA-Z0-9+\-_#.]*[ \t]*\r?\n/);
+            if (fenceStart) aiCode = aiCode.slice(fenceStart[0].length);
+            aiCode = aiCode.replace(/\r?\n?[ \t]*```[ \t]*$/, '');
+            aiCode = aiCode.replace(/\s+$/, '');
+
+            if (aiCode === "") {
+                throw new Error("AI ने खाली कोड लौटाया। स्पष्ट निर्देश बोलिए।");
+            }
+
+            const truncated = (cand.finishReason === "MAX_TOKENS");
+
+            if (isAppend) {
+                // ---- APPEND मोड: सिर्फ़ नया हिस्सा जुड़ता है, पुराना कोड छुआ नहीं जाता ----
+                previousCode = currentCode;   // Undo के लिए
+                editor.value = mergeAppend(currentCode, aiCode, selectedLang);
+                editor.scrollTop = editor.scrollHeight;
+                codeChanged();
+                if (fromTyping) typedEl.value = "";
+                if (truncated) {
+                    statusEl.innerText = "⚠️ यह हिस्सा बीच में कट गया। \"आगे का कोड पूरा करो\" बोलें या लिखें, AI वहीं से जारी रखेगा।";
+                } else {
+                    statusEl.innerText = "✅ नया कोड नीचे जोड़ दिया गया! (कुल लाइनें: " + countLines(editor.value) + ")";
+                }
+            } else {
+                // ---- REWRITE मोड: पूरा कोड नया बनकर आता है ----
+                if (truncated) {
+                    throw new Error("कोड बहुत लंबा हो गया और बीच में कट गया। आपका पुराना कोड सुरक्षित है। ➕ नीचे जोड़ता जाए मोड चुनें।");
+                }
+
+                // AI ने कोड बहुत छोटा कर दिया हो तो पूछें
+                if (currentCode.trim().length > 300 && aiCode.length < currentCode.trim().length * 0.6) {
+                    const ok = confirm("⚠️ नया कोड पुराने से काफ़ी छोटा है (AI ने शायद कुछ हटा दिया)।\n\nफिर भी बदलना चाहते हैं?");
+                    if (!ok) {
+                        statusEl.innerText = "↩️ बदलाव रद्द किया गया। पुराना कोड सुरक्षित है।";
+                        return;
+                    }
+                }
+
+                previousCode = currentCode;   // Undo के लिए
+                editor.value = aiCode;
+                editor.scrollTop = editor.scrollHeight;
+                codeChanged();
+                if (fromTyping) typedEl.value = "";
+                statusEl.innerText = "✅ कोड सफलतापूर्वक अपडेट कर दिया गया! (कुल लाइनें: " + countLines(editor.value) + ")";
+            }
+
+        } catch (err) {
+            console.error(err);
+            let msg = err.message || String(err);
+            if (err.name === "AbortError") msg = "AI ने बहुत देर लगा दी (timeout)। दोबारा कोशिश करें।";
+            else if (msg.includes("API key not valid") || msg.includes("API_KEY_INVALID")) msg = "API Key गलत है। सही Key डालें।";
+            else if (msg.toLowerCase().includes("quota") || msg.includes("429")) msg = "आज की फ्री लिमिट खत्म हो गई है। थोड़ी देर बाद या कल कोशिश करें।";
+            else if (msg.toLowerCase().includes("failed to fetch")) msg = "इंटरनेट कनेक्शन नहीं है।";
+            else if (msg.includes("not found") || msg.includes("404")) msg = "Model (" + MODEL + ") उपलब्ध नहीं है। API Key या model का नाम जाँचें।";
+            statusEl.innerText = "❌ त्रुटि: " + msg;
+        } finally {
+            clearTimeout(timeoutId);
+            isProcessing = false;
+            sendBtn.disabled = false;
+            resetMic();
+        }
+    }
+
+    // ============ Undo ============
+    function undoCode() {
+        if (previousCode === null) {
+            statusEl.innerText = "⚠️ वापस लाने के लिए कोई पिछला कोड नहीं है।";
+            return;
+        }
+        const temp = editor.value;
+        editor.value = previousCode;
+        previousCode = temp;   // दोबारा दबाने पर Redo जैसा काम करेगा
+        codeChanged();
+        statusEl.innerText = "↩️ पिछला कोड वापस आ गया।";
+    }
+
+    // ============ कॉपी ============
+    async function copyCode() {
+        const code = editor.value;
+        if (!code.trim()) {
+            statusEl.innerText = "⚠️ एडिटर खाली है, कॉपी करने के लिए कुछ नहीं।";
+            return;
+        }
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(code);
+            } else {
+                throw new Error("no-clipboard");
+            }
+            statusEl.innerText = "📋 पूरा कोड क्लिपबोर्ड पर कॉपी हो गया!";
+        } catch (e) {
+            // पुराने ब्राउज़र / file:// के लिए Fallback
+            editor.focus();
+            editor.select();
+            editor.setSelectionRange(0, editor.value.length);
+            try {
+                const ok = document.execCommand('copy');
+                if (!ok) throw new Error("execCommand failed");
+                statusEl.innerText = "📋 पूरा कोड क्लिपबोर्ड पर कॉपी हो गया!";
+            } catch (e2) {
+                statusEl.innerText = "❌ कॉपी नहीं हो पाया। कोड को मैन्युअली सेलेक्ट करके कॉपी करें।";
+            }
+        }
+    }
+
+    // ============ साफ़ करें ============
+    function clearCode() {
+        if (editor.value.trim() !== "" && !confirm("क्या आप सच में पूरा कोड मिटाना चाहते हैं?")) return;
+        previousCode = editor.value;   // गलती से मिटे तो Undo से वापस आ सके
+        editor.value = "";
+        codeChanged();
+        spokenEl.innerText = SPOKEN_PLACEHOLDER;
+        statusEl.innerText = "🗑️ एडिटर साफ़ कर दिया गया। (↩️ से वापस ला सकते हैं)";
+    }
+</script>
+
+</body>
+</html>
 
